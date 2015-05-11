@@ -1,0 +1,456 @@
+'''
+K.I.S.T.I.E (Keep, It, Simple, Take, It, Easy)
+Created on 1 Jan 2013
+@author: Leonardo Bruni, leo.b2003@gmail.com
+Kistie Maya Module Library
+This Kistie implementation i's part of project 'Kistie_Autorig' by Leonardo Bruni, leo.b2003@gmail.com
+'''
+
+#ToDo: implement a debug mode for print or not
+
+import pymel as pm                                          # import pymel lib
+import maya.cmds as cmds                                    # import maya cmds lib
+import maya.mel as mel                                      # import maya mel lib
+
+# Import kstMath
+import kcode.kmath.KstMath as _KstMath_
+reload(_KstMath_)
+KstMath = _KstMath_.KstMath()
+
+# Import KstOut
+import kcode.kcore.KstOut as _KstOut_
+reload(_KstOut_)
+KstOut = _KstOut_.KstOut()
+
+class KstMaya(object):
+    # Debug module name variable
+    _debug = 'KstMaya'
+
+    def __init__(self):
+        KstOut.debug('Kistie Maya function module loaded... ')
+
+    # Channels Operation method
+    def channels_op(self, selections, channels_list, *args):
+        '''
+        Desc:
+        Make operation on channels
+
+        Parameter:
+        selections = list of selection where perform operations
+        *args = type of operation (lock, hide)
+        channels_list = list of channels to perform operations
+
+        Return void
+
+        Example:
+        KstMaya.channels_op(['selection'], ['ch','ch','ch'], 'lock=Bool', 'keyable=Bool', 'channelBox=Bool')
+        '''
+
+        # Declare variable for errors
+        errors_list = []
+
+        # Check if selections type input is valid
+        if not type(selections) is list:
+            KstOut.debug(KstMaya._debug, 'selections must be a list!')
+            errors_list.append('selections')
+
+        # Check if channels_list input is valid
+        if not type(channels_list) is list:
+            KstOut.debug(KstMaya._debug, 'channels_list must be a list!')
+            errors_list.append('channels')
+
+        try:
+            # If there are no errors go
+            if len(errors_list) == 0:
+                # Create empty value for python command
+                cmd = ''
+                for sel in selections:
+                    for ch in channels_list:
+                        for count, arg in enumerate(args):
+                            # Build string command
+                            cmd = "cmds.setAttr('%s.%s', %s)" % (sel, ch, arg)
+
+                            # Execute string command // ToDo, build a Kistie class for this
+                            exec(cmd)
+
+                            # Debug command
+                            KstOut.debug(KstMaya._debug, cmd)
+
+            # Otherwise stop and release errorsList
+            else:
+                KstOut.debug(KstMaya._debug, 'You have some errors: ', errors_list)
+        except:
+            KstOut.error(KstMaya._debug, 'Error found!!! '+str(errors_list))
+
+    # Get Shape method
+    def get_shape_node(self, transform):
+        '''
+        Desc:
+        return a shape from a transform
+
+        Parameter:
+        transform = transform node that you want get the shape
+
+        Return:
+        Shape obj from the transform
+        '''
+        shape_list = cmds.listRelatives(transform, s=True)
+        if shape_list:
+            shape = shape_list[0]
+            return shape
+        else:
+            KstOut.debug(self._debug_msg, 'No shapes found in current transform, double check')
+            return None
+
+    # Get Transform method
+    def get_transform_node(self, shape):
+        '''
+        Desc:
+        return a transform from a shape
+
+        Parameter:
+        shape = shape node that you want get the transform
+
+        Return:
+        Transform obj from the shape
+        '''
+        try:
+            transform_list = cmds.listRelatives(shape, p=True)
+            if transform_list:
+                transform = transform_list[0]
+                return transform
+        except:
+            KstOut.debug(KstMaya._debug, 'No transform found in current shape, double check')
+            pass
+
+    # Get Parent method
+    @staticmethod
+    def get_his_parent(obj):
+        '''
+        Desc:
+        return parent from an object
+
+        Parameter:
+        obj = object to get the parent
+
+        Return:
+        Parent object
+        '''
+        try:
+            parent = cmds.listRelatives(obj, p=True)
+            if parent:
+                return parent
+        except:
+            KstOut.debug(KstMaya._debug, 'No parent object found, double check')
+            pass
+
+    # Get Parent method
+    @staticmethod
+    def get_his_child(obj):
+        '''
+        Desc:
+        return child from an object
+
+        Parameter:
+        obj = object to get the child
+
+        Return:
+        Parent object
+        '''
+        try:
+            child = cmds.listRelatives(obj, c=True)
+            if child:
+                return child
+        except:
+            KstOut.debug(KstMaya._debug, 'No child object found, double check')
+            pass
+
+    # Get all input type (nodeType) nodes in scene
+    def get_node_type(self, node_type):
+        '''
+        Desc:
+        return a list of node founded from nodeType parameter
+
+        Parameter:
+        node_type = nodes type to find
+
+        Return:
+        a list with node of that type defined in input
+        '''
+        node_list = cmds.ls(type=node_type)
+        found_nodes = []
+        if node_list:
+            KstOut.debug(KstMaya._debug, str(node_type)+' nodes list: ')
+            for node in node_list:
+                KstOut.debug(KstMaya._debug, 'nodetype = '+str(node_type)+'-> '+str(node))
+                found_nodes.append(node)
+        else:
+            KstOut.debug(KstMaya._debug, 'nodetype "'+str(node_type)+'" not exists!')
+        return found_nodes
+
+    # Get all input name (nodeName) nodes in scene
+    def get_node_if_name_contains(self, node_name):
+        '''
+        Desc:
+        return a list of node founded from nodeName parameter
+
+        Parameter:
+        node_name = nodes name to find
+
+        Return:
+        a list with node of that contains name defined in input
+        '''
+        node_list = cmds.ls()
+        found_nodes = []
+        if node_list:
+            for node in node_list:
+                if node_name in node:
+                    KstOut.debug(KstMaya._debug, '-> '+str(node))
+                    found_nodes.append(node)
+        else:
+            KstOut.debug(KstMaya._debug, str(node_name)+' not exists')
+        return found_nodes
+
+    # Make a copy of the inputObject
+    def duplicate_this(self, input_object, copy_name='cpy_'):
+        '''
+        Desc:
+        return a obj that is the copy of inputObject with a name defined in nameOfCopy
+
+        Parameter:
+        input_object = the object to be copied
+        copy_name = the copy name
+
+        Return:
+        the obj copied from the original with the new name
+        '''
+
+        if input_object:
+            #cmds.select(input_object)
+            copy_object = cmds.duplicate(input_object, smartTransform=True, name = copy_name, renameChildren = True)
+            copy_object[0] = cmds.rename(copy_object[0], copy_name+input_object)
+            #print('DEBUG copy object: ', copy_object)
+
+            # Search all children of the current object for renaming
+            hierarchy = cmds.listRelatives(copy_object, c=True)
+            if hierarchy:
+                for child in hierarchy:
+                    cmds.rename(child, copy_name+child[:-1])
+
+                KstOut.debug(KstMaya._debug, str(copy_object[0])+" duplicated from "+str(input_object))
+                return copy_object
+        else:
+            KstOut.debug(KstMaya._debug, ' inputObject empty, check selection, or array')
+
+    # Make connection between two node with specified attributes ToDo: add code for test if connection is already in there or not, if it is force delete
+    def node_op(self, src, op, dst):
+        '''
+        Desc:
+        Make node operation between two object+attributes
+
+        Parameter:
+        src = source object and attr
+        op = operator:
+        this value can be
+        >> connect SRC to DST
+        << connect DST to SRC
+        \\ disconnect SRC from DST
+        dst = destinatin object and attr
+
+        Return:
+        bool attribute, True if connection was done, otherwise in all others case False
+        '''
+        stat = False
+        if src and dst and op:
+            if op == '>>':
+                try:
+                    cmds.connectAttr(src, dst, f=True)
+                    stat = True
+                except:
+                    KstOut.debug(KstMaya._debug, 'Error occurred making connection src, dst')
+                    KstOut.debug(KstMaya._debug, 'DEBUG DATA: ')
+                    KstOut.debug(KstMaya._debug, '%s = SOURCE' % src)
+                    KstOut.debug(KstMaya._debug, '%s = DESTINATION' % dst)
+                    KstOut.debug(KstMaya._debug, '-> END DATA')
+                    # print ''
+
+            elif op == '<<':
+                try:
+                    cmds.connectAttr(dst, src, f=True)
+                    stat = True
+                except:
+                    KstOut.debug(KstMaya._debug, 'Error occurred making connection dst, src')
+                    KstOut.debug(KstMaya._debug,'DEBUG DATA: ')
+                    KstOut.debug(KstMaya._debug, '%s = SOURCE' % src)
+                    KstOut.debug(KstMaya._debug, '%s = DESTINATION' % dst)
+                    KstOut.debug(KstMaya._debug, '-> END DATA')
+                    # print ''
+
+            elif op == '||':
+                try:
+                    cmds.disconnectAttr(src, dst, f=True)
+                    stat = True
+                except:
+                    KstOut.debug(KstMaya._debug, 'Error occurred in disconnection')
+                    KstOut.debug(KstMaya._debug, 'DEBUG DATA: ')
+                    KstOut.debug(KstMaya._debug, '%s = SOURCE' % src)
+                    KstOut.debug(KstMaya._debug, '%s = DESTINATION' % dst)
+                    KstOut.debug(KstMaya._debug, '-> END DATA')
+                    # print ''
+
+            else:
+                KstOut.debug(KstMaya._debug, ' symbol not defined, you can use (>>, <<, ||)')
+                stat = False
+
+            return stat
+        else:
+            KstOut.debug(KstMaya._debug, ' double check inputs (source, operator, destination)')
+            KstOut.error(KstMaya._debug, ' double check inputs (source, operator, destination)')
+            return None
+
+    # Destroy all connections, finally works with keyframes and normal connections
+    def destroy_channels_connections(self, sel, channels_list):
+        '''
+        Desc:
+        Destroy connections for selected channels
+        sel = current object
+        *args = list of channels to disconnect in format [ch,ch,ch,...]
+        '''
+
+        for ch in channels_list:
+            src_attr = cmds.connectionInfo(sel+'.'+ch, sourceFromDestination=True)
+            if src_attr:
+                KstOut.debug(KstMaya._debug, 'SOURCE: '+src_attr)
+                KstOut.debug(KstMaya._debug, 'DEST: '+sel+'.'+ch)
+                cmds.disconnectAttr(src_attr, sel+'.'+ch)
+
+    # Make constraint in more simple mode
+    def make_constraint(self, src, dst, constraint_type='aim', skip_translate='none', skip_rotate='none', maintain_offset=False, weight=1, aim_vec=[0,1,0], up_vec=[0,0,1], world_up_type='vector', world_up_vec=[0,0,1], world_up_object=None, keep_constraint_node = True, name = None):
+        '''
+        Desc:
+        Make any contraint
+
+        Parameter:
+        src = source object object contraint from
+        dst = destination object constraint to:
+        constraintType = constraint type
+        offset = mantaintOffset bool val
+
+        Return:
+        contraint str name
+        '''
+        # var for constraint name
+        constraint = []
+        type=''
+
+        # Fix name
+        name = str(name).replace("u'",'').replace('[',' ').replace(']',' ').replace("'",' ').replace(' ', '')
+
+        # Parent constraint
+        if constraint_type == 'parent':
+            type='PAC'
+            constraint = cmds.parentConstraint(src, dst, mo=maintain_offset, w=weight, st=skip_translate, name=name+'_'+type)
+
+        # Point constraint
+        elif constraint_type == 'point':
+            type='PC'
+            constraint = cmds.pointConstraint(src, dst, mo=maintain_offset, w=weight, sk=skip_translate, name=name+'_'+type)
+
+        # Orient constraint
+        elif constraint_type == 'orient':
+            type='OC'
+            constraint = cmds.orientConstraint(src, dst, mo=maintain_offset, w=weight, sk=skip_rotate, name=name+'_'+type)
+
+        # Aim constraint, ToDo, optimize
+        elif constraint_type == 'aim':
+            type='AC'
+            if world_up_type == 'object':
+                if world_up_object == None:
+                    KstOut.debug(KstMaya._debug, "Check object up variable, can't be set to None")
+                else:
+                    constraint = cmds.aimConstraint(src, dst, mo=maintain_offset, w=weight, sk=skip_rotate, aimVector=aim_vec, upVector=up_vec, worldUpType=world_up_type, worldUpVector=world_up_vec, worldUpObject=world_up_object, name=name+'_'+type)
+            else:
+                constraint = cmds.aimConstraint(src, dst, mo=maintain_offset, w=weight, sk=skip_rotate, aimVector=aim_vec, upVector=up_vec, worldUpType=world_up_type, worldUpVector=world_up_vec, name=name+'_'+type)
+
+        #constraint = cmds.rename(constraint[0], '%s_%s' % (constraint[0], type))
+
+        # Delete constraint node if needed
+        if keep_constraint_node == False:
+            cmds.delete(constraint)
+
+        return constraint
+
+    # Get position list from object position
+    def get_position_list_from_objs(self, object_list, coords_space='world'):
+        '''
+        Desc:
+        Get a position list from object list
+
+        Parameter:
+        object_list = the object list
+        coords_space = the coordinat space, can be "world" (default), or "local"
+
+        Return:
+        list with positions
+        '''
+        position_list = []
+        # Check if position list is valid
+        if object_list:
+            # Set coords to world
+            if coords_space == 'world':
+                world_space = True
+                object_space = False
+
+            # Set coord to local
+            elif coords_space == 'local':
+                world_space = False
+                object_space = True
+
+            for obj in object_list:
+                KstOut.debug(KstMaya._debug, obj)
+                obj_pos = cmds.xform(obj, q=True, t=True, ws=world_space, os=object_space)
+                position_list.append(obj_pos)
+            return position_list
+        else:
+            KstOut.debug(KstMaya._debug, 'Check if inputs are valid')
+            return None
+
+    # Insert element in hierarchy
+    def insert_parent(self, src, dst, reset_src_trs = True):
+        '''
+        Desc:
+        Insert an object in the middle of an existing hierarchy
+
+        Parameter:
+        src = object to insert
+        dst = destination object that will be reparented
+
+        Return:
+        None
+        '''
+        # Check existing hierarchy
+        # Who's the parent
+        parent = KstMaya.get_his_parent(dst)
+
+        # Who's the child
+        child = KstMaya.get_his_child(dst)
+
+        # Remake hiararchy
+        cmds.parent(src, parent)
+        cmds.parent(child, src)
+
+        return parent, src, child
+
+    # Abc code
+    def abc_import(self, mode='Import', namespace='', file_path=''):
+        cmdStr = ''
+        # Import
+        if mode == 'Import':
+            cmds.file(file_path, i=True, type='Alembic', ignoreVersion=True, gl=True, rpr=namespace)
+
+        # Reference
+        if mode == 'Reference':
+            cmds.file(file_path, r=True, type='Alembic', ignoreVersion=True, gl=True, rpr=namespace)
+
+    def foo(self):
+        pass

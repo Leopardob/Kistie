@@ -1,0 +1,32 @@
+import maya.cmds as cmds
+import sys
+
+#sys.path.append('C:/DEV/Kistie')
+# add pyhton path if needed
+kPath = 'W:/RTS/People/Cnicolas/ps/Kistie'
+if kPath not in sys.path:
+    sys.path.append(kPath)
+    print "//PUPPET SOUL : added kistie to python path : " + kPath
+
+import maya.cmds as cmds
+import sys
+
+import kcode.kcore.kmaya.kattrs.KstAttrs as KstAttrs
+import kcode.krig.KstRig as KstRig
+import kcode.kcore.KstDraw as KstDraw
+import kcode.kcore.KstMaya as KstMaya
+import kcode.krig.kstRigModules.RTS_Rig as KstRigRts
+import kcode.krig.kstRigModules.Wing as Wing
+
+reload(KstAttrs)
+reload(KstRig)
+reload(KstDraw)
+reload(KstMaya)
+reload(KstRigRts)
+reload(Wing)
+
+KstAttrs=KstAttrs.KstAttrs()
+KstRig=KstRig.KstRig()
+KstDraw=KstDraw.KstDraw()
+KstMaya=KstMaya.KstMaya()
+KstRigRts=KstRigRts.RTS_Rig()
