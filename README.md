@@ -20,7 +20,7 @@ ex.1 - Channels connections
 run this script:
 import maya.cmds as cmds
 
-# Kistie, Python path, change if you need
+- Kistie, Python path, change if you need
 sys.path.append('C:/Work/DEV/Kistie') # Your repo
 
 from kcode.kcore.KstMaya import KstMaya
