@@ -76,8 +76,10 @@ selection = cmds.ls(sl=True)
 pos = kmaya.get_position_list_from_objs(selection)
 krig.create_joint_chain('MyChain',pos)
 
-You will see that Kistie is quite flexible, and most important Open Source, so, change what you want or expand as you want and just...
-KEEP IT SIMPLE TAKE IT EASY
+I could continue until tomorrow morning with other examples, but the source code is full of comment, and the class and method quite clear, just explore the possibility, you will see that Kistie is quite flexible, and most important Open Source, so, change what you want or expand as you want and just...
+Potentially you could build an entire character rig with the functions that i'm implemented. I did =D
+
+KEEP IT SIMPLE TAKE IT EASY =)
 
 Enjoy!
 
