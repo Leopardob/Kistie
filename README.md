@@ -14,15 +14,18 @@ download or clone Kistie repo for instance: C:/Work/DEV/Kistie
 
 Inside Maya (all version that suppor Python):
 
+Before all we need to tell to Maya where is Kistie:
+```
+#Kistie, Python path, change if you need
+sys.path.append('C:/Work/DEV/Kistie') # Your repo
+```
+
 ex.1 - Channels connections
 - Create two cubes
 
 run this script:
 ```
 import maya.cmds as cmds
-
-- Kistie, Python path, change if you need
-sys.path.append('C:/Work/DEV/Kistie') # Your repo
 
 from kcode.kcore.KstMaya import KstMaya
 kmaya = KstMaya()
