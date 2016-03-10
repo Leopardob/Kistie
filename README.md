@@ -18,6 +18,7 @@ ex.1 - Channels connections
 - Create to cubes
 
 run this script:
+```
 import maya.cmds as cmds
 
 - Kistie, Python path, change if you need
@@ -27,54 +28,65 @@ from kcode.kcore.KstMaya import KstMaya
 kmaya = KstMaya()
 
 kmaya.node_op('pCube1.tx','>>','pCube2.ty')
+```
 
 ex.3 - Object creation
 - Create two locators
 
 run this script:
+```
 import maya.cmds as cmds
 
 from kcode.krig.KstRig import KstRig
 krig = KstRig()
 krig.create_line_from_objects('curve', ['locator1', 'locator2'])
+```
 
 ex.2 - Object creation
 - Create two locators
 
 run this script:
+```
 import maya.cmds as cmds
 
 from kcode.krig.KstRig import KstRig
 krig = KstRig()
 krig.create_line_from_objects('curve', ['locator1', 'locator2'])
+```
 
 ex.4 - Joint chain creation from scratch
 from an empty Maya scene
 
 run this script:
+```
 import maya.cmds as cmds
 
 from kcode.krig.KstRig import KstRig
 krig = KstRig()
 krig.create_joint_chain('MyChain',[(0, 0, 0), (0,1,0), (0,2,0), (0,3,0)])
+```
 
 ex.5 - Joint chain creation from 3 locators
 create 3 locators
 
 run this script:
+```
 import maya.cmds as cmds
 
 from kcode.krig.KstRig import KstRig
 krig = KstRig()
 pos = kmaya.get_position_list_from_objs(['locator1', 'locator2', 'locator3'])
 krig.create_joint_chain('MyChain',pos)
+```
 
 Of course you can also build n locators
 and make this:
 
+```
 selection = cmds.ls(sl=True)
 pos = kmaya.get_position_list_from_objs(selection)
 krig.create_joint_chain('MyChain',pos)
+```
 
 I could continue until tomorrow morning with other examples, but the source code is full of comment, and the class and method quite clear, just explore the possibility, you will see that Kistie is quite flexible, and most important Open Source, so, change what you want or expand as you want and just...
 Potentially you could build an entire character rig with the functions that i'm implemented. I did =D
