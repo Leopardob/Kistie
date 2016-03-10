@@ -15,7 +15,7 @@ download or clone Kistie repo for instance: C:/Work/DEV/Kistie
 Inside Maya (all version that suppor Python):
 
 ex.1 - Channels connections
-- Create to cubes
+- Create two cubes
 
 run this script:
 ```
