@@ -1,7 +1,0 @@
-ToDO List priority:
-
-X Finire la classe Wings
-! Rendere omogeneo il codice con gli input con stesso nome e stessa posizione, quando possibile
-X Rivedere le procedure di creazione dei joints
-- Rivedere la naming convention e costruirci una classe
-- Implementare il salvataggio dei dati del Kistie node

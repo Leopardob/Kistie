@@ -273,7 +273,7 @@ class KstRig(object):
 
         # Draw a curve sphere
         if control_type == 'sphere':
-            animCtl = cmds.curve(d=1, n=control_name+'_MANIP', p=[(0.0, 0.0, 1), (0.0, 0.5, 0.866025), (0.0 ,0.866025, 0.5),(0.0, 1, 0.0),(0.0, 0.866025, -0.5), (0.0, 0.5, -0.866025), (0.0, 0.0, -1), (0.0, -0.5, -0.866025), (0.0, -0.866025, -0.5), (0.0, -1,0.0), (0.0, -0.866025, 0.5), (0.0, -0.5, 0.866025), (0.0, 0.0, 1), (0.707107, 0.0, 0.707107), (1, 0.0, 0.0), (0.707107, 0.0, -0.707107), (0.0, 0.0, -1), (-0.707107, 0.0, -0.707107), (-1, 0.0, 0.0), (-0.866025, 0.5, 0.0), (-0.5, 0.866025, 0.0), (0.0, 1, 0.0), (0.5, 0.866025, 0.0), (0.866025, 0.5, 0.0), (1, 0.0, 0.0), (0.866025, -0.5, 0.0), (0.5, -0.866025, 0.0), (0.0, -1, 0.0), (-0.5, -0.866025, 0.0), (-0.866025, -0.5, 0.0), (-1, 0.0, 0.0), (-0.707107, 0.0, 0.707107), (0.0, 0.0, 1)], k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32])
+            animCtl = cmds.curve(d=1, n=control_name+'_CTL', p=[(0.0, 0.0, 1), (0.0, 0.5, 0.866025), (0.0 ,0.866025, 0.5),(0.0, 1, 0.0),(0.0, 0.866025, -0.5), (0.0, 0.5, -0.866025), (0.0, 0.0, -1), (0.0, -0.5, -0.866025), (0.0, -0.866025, -0.5), (0.0, -1,0.0), (0.0, -0.866025, 0.5), (0.0, -0.5, 0.866025), (0.0, 0.0, 1), (0.707107, 0.0, 0.707107), (1, 0.0, 0.0), (0.707107, 0.0, -0.707107), (0.0, 0.0, -1), (-0.707107, 0.0, -0.707107), (-1, 0.0, 0.0), (-0.866025, 0.5, 0.0), (-0.5, 0.866025, 0.0), (0.0, 1, 0.0), (0.5, 0.866025, 0.0), (0.866025, 0.5, 0.0), (1, 0.0, 0.0), (0.866025, -0.5, 0.0), (0.5, -0.866025, 0.0), (0.0, -1, 0.0), (-0.5, -0.866025, 0.0), (-0.866025, -0.5, 0.0), (-1, 0.0, 0.0), (-0.707107, 0.0, 0.707107), (0.0, 0.0, 1)], k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32])
             cmds.makeIdentity(apply=True, t=1, r=1, s=1)
             cmds.setAttr(animCtl+'.overrideEnabled',1)
             cmds.setAttr(animCtl+'.overrideColor',color)
@@ -286,7 +286,7 @@ class KstRig(object):
 
         if (transform_on_top):
             animGrp = cmds.group(em=True, n=control_name+'_TGRP') # Change for pipeline also for _CTRL
-            cmds.parent(animCtl[0], animGrp)
+            cmds.parent(animCtl, animGrp)
             cmds.xform(animGrp, t=pos, s=[size, size, size], ws=True)
             return [animGrp, animCtl]
         else:
@@ -382,8 +382,10 @@ class KstRig(object):
 
         if reverse:
             points_list = sorted(points_list, reverse=True)
-
-        position_list = KstMaya.get_position_list_from_objs(points_list)
+        try:
+            position_list = KstMaya.get_position_list_from_objs(points_list)
+        except:
+            position_list = points_list
         joint_list = []
 
         for pos in position_list:
@@ -422,21 +424,74 @@ class KstRig(object):
 
         return joint_list
 
+    # Lock curve length
     @staticmethod
-    def create_ik(jnt_start, jnt_end, type = 'RPS', up_vec = [0,1,0], name = '_IKH'):
+    def create_lock_length(curve, lock_length = True):
+        '''
+        Desc:
+        Lock curve length
+
+        Parameter:
+        curve = curve transform
+
+        Return:
+        None
+        '''
+
+        # Retrieve curve shape
+        curve_shape = KstMaya.get_shape_node(curve)
+
+        # Add internal attr .lockLength using mel eval otherwise does not work with the internal attribute
+        mel_cmd = 'addAttr -ln lockLength -sn ll -at bool -k true  "%s";\n' % curve_shape
+        mel_cmd += 'setAttr ("%s" + ".lockLength") true;\n' % curve_shape
+
+        # And execute the mel shit...
+        mel.eval(mel_cmd)
+
+    @staticmethod
+    def create_ik(jnt_start, jnt_end, type = 'RPS', up_vec = [0,1,0], name = '_IKH', create_curve = True, curve=None, reparent_curve = False, freeze_joints = True):
+        '''
+        Desc:
+        Create ikhandle between defined start and end joint
+
+        Parameter:
+        jnt_start = start joint
+        jnt_end = end joint
+        type = ikh type
+        up_vec = user defined up vector
+        name = ikh member name
+
+        Return:
+        Ik handle node created by procedure
+        '''
         solver = None
         if type == 'RPS':
             solver = 'ikRPsolver'
+            name = '_IKH'
         elif type == 'SCS':
             solver = 'ikSCsolver'
+            name = '_IKH'
         elif type == 'SS':
             solver = 'ikSplineSolver'
-        ikh = cmds.ikHandle(name = name, sj = jnt_start, ee = jnt_end, solver = solver)
+            name == 'IKHS'
+        ikh = cmds.ikHandle(name = name, sj = jnt_start, ee = jnt_end, solver = solver, createCurve=create_curve, curve=curve, freezeJoints = freeze_joints, parentCurve = reparent_curve)
         return ikh
 
     # Modify existing orientation of the current chain
     @staticmethod
     def modifiy_joint_chain_axis(joint_chain, orient_chain='xyz', up_axis_chain='yup'):
+        '''
+        Desc:
+        Modify specified joint chain orientation
+
+        Parameter:
+        joint_chain = chain to affect
+        orient_chain = axis to orient
+        up_axis_chain = chain up axis
+
+        Return:
+        None
+        '''
         for i in range(0, len(joint_chain)):
             KstOut.debug(KstRig._debug, 'Reorient current joint:' )
             KstOut.debug(KstRig._debug, 'joint: %s' % joint_chain[i])
@@ -585,6 +640,88 @@ class KstRig(object):
                     # Attach closestPoint output to UV follicle position
                     KstMaya.node_op('%s.result.parameterU' % cp_on_srf, '>>', '%s.parameterU' % follicle)
                     KstMaya.node_op('%s.result.parameterV' % cp_on_srf, '>>', '%s.parameterV' % follicle)
+                except:
+                    KstOut.debug(KstRig._debug, 'CLOSEST -> FOLLICLE')
+
+                try:
+                    # Attach follicle output transformations to axis
+                    KstMaya.node_op('%s.outTranslate' % follicle, '>>', '%s.translate' % obj_to_attach)
+                    KstMaya.node_op('%s.outRotate' % follicle, '>>', '%s.rotate' % obj_to_attach)
+                except:
+                    KstOut.debug(KstRig._debug, 'FOLLICLE -> AXIS')
+
+                # Delete closestPoint node
+                cmds.delete(cp_on_srf)
+
+                # Parent follicle shape to AXIS transform
+                cmds.parent(follicle, obj_to_attach, s=True, r=True)
+
+                # print ''
+                # print ('OBJ TO ATTACH: ', obj_to_attach)
+                # print ''
+
+                # Delete the empty transform for the follicle
+                cmds.delete(obj_to_delete)
+            return obj_to_attach
+        else:
+            KstOut.debug(KstRig._debug, 'Check if inputs are valid')
+            KstOut.error(KstRig._debug, 'Check if inputs are valid')
+
+    # Attach object to a surface
+    def attach_object_to_mesh(self, mesh, projection_point_obj, obj_to_attach='axis', stick_to_surface = True):
+        '''
+        Description: attach the projection point object (projection_point_obj) to the surface (srf)
+        srf = surface
+        obj_to_attach = object to attach to the surface
+
+        return object_to_attach
+        '''
+        # Check if axis is defined by user or not
+        if obj_to_attach=='axis':
+            obj_to_attach = cmds.group(em=True, n='%s' % str(projection_point_obj)+'_AXIS')
+        else:
+            obj_to_attach = obj_to_attach
+
+        # Check if all variables are valid
+        if mesh and projection_point_obj and obj_to_attach:
+
+            # Create closestPointOnSurface Maya node
+            cp_on_srf = self.create_maya_node('nearestPointOnMesh', '%s_NPOM' % projection_point_obj)
+
+            # Create decomposeMatrix Maya node
+            d_matrix = self.create_maya_node('decomposeMatrix', '_DMAT')
+
+            # Attach surface shape to closestSurface inputSurface
+            mesh_shape = KstMaya.get_shape_node(mesh)
+            KstMaya.node_op('%s.worldSpace[0]' % mesh_shape, '>>' , '%s.inputMesh' % cp_on_srf)
+
+            # Attach projection world matrix position to decompose matrix input
+            KstMaya.node_op('%s.worldMatrix[0]' % projection_point_obj, '>>', '%s.inputMatrix' % d_matrix)
+
+            # Connect decompose matrix in closestPoint input pos
+            KstMaya.node_op('%s.outputTranslate' % d_matrix, '>>', '%s.inPosition' % cp_on_srf)
+
+            # Set the position in output on axis or custom obj
+            KstMaya.node_op('%s.result.position' % cp_on_srf, '>>', '%s.translate' % obj_to_attach)
+            KstDraw.debug_axis(obj_to_attach)
+
+            # Check if stick param is true
+            if(stick_to_surface):
+                # Create follicle Maya node
+                follicle = self.create_maya_node('follicle', '%s_FOLL' % obj_to_attach)
+                obj_to_delete = KstMaya.get_transform_node(follicle)
+
+                try:
+                    # Attach surface to follicle
+                    KstMaya.node_op('%s.worldMatrix[0]' % mesh_shape, '>>', '%s.inputWorldMatrix' % follicle)
+                    KstMaya.node_op('%s.worldMesh[0]' % mesh_shape, '>>', '%s.inputMesh' % follicle)
+                except:
+                    KstOut.debug(KstRig._debug, 'SURFACE -> FOLLICLE')
+
+                try:
+                    # Attach closestPoint output to UV follicle position
+                    KstMaya.node_op('%s.parameterU' % cp_on_srf, '>>', '%s.parameterU' % follicle)
+                    KstMaya.node_op('%s.parameterV' % cp_on_srf, '>>', '%s.parameterV' % follicle)
                 except:
                     KstOut.debug(KstRig._debug, 'CLOSEST -> FOLLICLE')
 

@@ -276,6 +276,34 @@ class KstAttrs(object):
         connections = cmds.listConnections(obj+'.'+attr_name, s=1)
         return connections[0]
 
+    def create_tag_attr(self, obj, tag_name, tag_value):
+        '''
+        Desc:
+        Create a tag for selected object
+
+        Parameter:
+        obj = object that contain tag
+        tag = tag name
+        value = tag value
+
+        Return:
+        obj.tag_name
+        '''
+
+        # Check if obj is valid
+        if (obj):
+            if not cmds.attributeQuery(tag_name, node=obj, exists = True):
+                cmds.addAttr(obj, shortName=tag_name, longName=tag_name, dt='string')
+                cmds.setAttr(obj+'.'+tag_name, e=True, keyable=False)
+                cmds.setAttr(obj+'.'+tag_name, tag_value, type='string')
+                KstAttrs.lock_attr(self, obj, tag_name)
+            else:
+                pass
+                #print('Attribute %s already exists on node %s, skipped' % (tag_name, obj))
+
+        return obj+'.'+tag_name
+
+
     def __get__(self, instance, owner):
         '''
         :param instance:

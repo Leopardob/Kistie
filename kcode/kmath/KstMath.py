@@ -55,10 +55,27 @@ class KstMath(object):
         Return:
         a MVector
         '''
-        tmp_a = self.vec_from_point(pt_a)
-        tmp_b = self.vec_from_point(pt_a)
-        vec = om.MVector(tmp_b - tmp_a)
+        tmp_a = om.MPoint(pt_a)
+        tmp_b = om.MPoint(pt_b)
+        vec = om.MVector(pt_a - pt_b)
         return vec
+
+    def vec_middle_point(self, pt_a, pt_b):
+        '''
+        Desc:
+        Method returns a middle point between 2 points
+
+        Parameter:
+        pt_a = first point
+        pr_b = second point
+
+        Return:
+        a MPoint
+        '''
+        tmp_a = self.vec_from_point(pt_a)
+        tmp_b = self.vec_from_point(pt_b)
+        pt_mid = om.MVector(tmp_a + tmp_b) * .5
+        return pt_mid
 
     def get_44_matrix_from_1_vec(self, normal, point):
         '''
@@ -345,7 +362,7 @@ class KstMath(object):
         '''
         vec_a = First Vector
         '''
+
         # Convert input vector in MVector
-        vec = self.vec_from_point(vec_a)
-        mag = vec.length()
+        mag = vec_a.length()
         return mag

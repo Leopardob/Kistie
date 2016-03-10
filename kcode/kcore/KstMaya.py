@@ -11,6 +11,12 @@ This Kistie implementation i's part of project 'Kistie_Autorig' by Leonardo Brun
 import pymel as pm                                          # import pymel lib
 import maya.cmds as cmds                                    # import maya cmds lib
 import maya.mel as mel                                      # import maya mel lib
+import maya.OpenMaya as om
+
+# Import kstCore
+import kcode.kcore.KstCore as _KstCore_
+reload(_KstCore_)
+KstCore = _KstCore_.KstCore()
 
 # Import kstMath
 import kcode.kmath.KstMath as _KstMath_
@@ -82,8 +88,9 @@ class KstMaya(object):
         except:
             KstOut.error(KstMaya._debug, 'Error found!!! '+str(errors_list))
 
+    @staticmethod
     # Get Shape method
-    def get_shape_node(self, transform):
+    def get_shape_node(transform):
         '''
         Desc:
         return a shape from a transform
@@ -99,7 +106,7 @@ class KstMaya(object):
             shape = shape_list[0]
             return shape
         else:
-            KstOut.debug(self._debug_msg, 'No shapes found in current transform, double check')
+            #KstOut.debug(self._debug_msg, 'No shapes found in current transform, double check')
             return None
 
     # Get Transform method
@@ -272,7 +279,7 @@ class KstMaya(object):
                     KstOut.debug(KstMaya._debug, '%s = SOURCE' % src)
                     KstOut.debug(KstMaya._debug, '%s = DESTINATION' % dst)
                     KstOut.debug(KstMaya._debug, '-> END DATA')
-                    # print ''
+                    print 'CANNOT ', src, dst
 
             elif op == '<<':
                 try:
@@ -380,6 +387,69 @@ class KstMaya(object):
 
         return constraint
 
+    # Make multi constraint in more simple mode
+    def make_multi_constraint(self, src_list, dst, constraint_type='aim', skip_translate='none', skip_rotate='none', maintain_offset=False, weights_list=[1.0], aim_vec=[0,1,0], up_vec=[0,0,1], world_up_type='vector', world_up_vec=[0,0,1], world_up_object=None, keep_constraint_node = True, name = None):
+        '''
+        Desc:
+        Make multiconstraint for any contraint
+
+        Parameter:
+        src = source object object contraint from
+        dst = destination object constraint to:
+        constraintType = constraint type
+        offset = mantaintOffset bool val
+
+        Return:
+        contraint str name
+        '''
+        # var for constraint name
+        constraint = []
+        type=''
+
+        # Fix name
+        name = str(name).replace("u'",'').replace('[',' ').replace(']',' ').replace("'",' ').replace(' ', '')
+
+        # Loop each element in src_list
+        i = 0
+        for src in src_list:
+            # Parent constraint
+            if constraint_type == 'parent':
+                type='PAC'
+                constraint = cmds.parentConstraint(src, dst, mo=maintain_offset, w=weights_list[i], st=skip_translate, name=name+'_'+type)
+                i = i+1
+
+            # Point constraint
+            elif constraint_type == 'point':
+                type='PC'
+                constraint = cmds.pointConstraint(src, dst, mo=maintain_offset, w=weights_list[i], sk=skip_translate, name=name+'_'+type)
+                i = i+1
+
+            # Orient constraint
+            elif constraint_type == 'orient':
+                type='OC'
+                constraint = cmds.orientConstraint(src, dst, mo=maintain_offset, w=weights_list[i], sk=skip_rotate, name=name+'_'+type)
+                i = i+1
+
+            # Aim constraint, ToDo, optimize
+            elif constraint_type == 'aim':
+                type='AC'
+                if world_up_type == 'object':
+                    if world_up_object == None:
+                        KstOut.debug(KstMaya._debug, "Check object up variable, can't be set to None")
+                    else:
+                        constraint = cmds.aimConstraint(src, dst, mo=maintain_offset, w=weights_list[i], sk=skip_rotate, aimVector=aim_vec, upVector=up_vec, worldUpType=world_up_type, worldUpVector=world_up_vec, worldUpObject=world_up_object, name=name+'_'+type)
+                else:
+                    constraint = cmds.aimConstraint(src, dst, mo=maintain_offset, w=weights_list[i], sk=skip_rotate, aimVector=aim_vec, upVector=up_vec, worldUpType=world_up_type, worldUpVector=world_up_vec, name=name+'_'+type)
+                i = i+1
+
+            #constraint = cmds.rename(constraint[0], '%s_%s' % (constraint[0], type))
+
+            # Delete constraint node if needed
+            if keep_constraint_node == False:
+                cmds.delete(constraint)
+
+        return constraint
+
     # Get position list from object position
     def get_position_list_from_objs(self, object_list, coords_space='world'):
         '''
@@ -415,6 +485,125 @@ class KstMaya(object):
             KstOut.debug(KstMaya._debug, 'Check if inputs are valid')
             return None
 
+    # Get cvs list
+    def get_num_cvs(self, curve):
+        '''
+        Desc:
+        Get cvs lenght from a curve
+
+        Parameter:
+        curve = curve to get cvs positin list from
+        coords_space = the coordinat space, can be "world" (default), or "local"
+
+        Return:
+        list with positions
+        '''
+
+        # If curve is nod define or not correct release error
+        if curve:
+            # Get curve shape
+            curve_shape = KstMaya.get_shape_node(curve)
+
+            # Get degree
+            degree = cmds.getAttr(curve_shape+".degree")
+
+            # Get spans
+            spans = cmds.getAttr(curve_shape+".spans")
+
+            # Calulating ncvs with formula spans+degree
+            ncvs = spans+degree
+
+            # Return the list
+            return ncvs
+        else:
+            cmds.warning("Curve %s,  is not defined, or is not a curve, double check!" % curve)
+            return None
+
+    @staticmethod
+    # Get position list from cvs position
+    def get_cvs_position_list_from_curve(curve, coords_space='world'):
+        '''
+        Desc:
+        Get cv position list from a curve
+
+        Parameter:
+        curve = curve to get cvs positin list from
+        coords_space = the coordinat space, can be "world" (default), or "local"
+
+        Return:
+        list with positions
+        '''
+
+        # If curve is nod define or not correct release error
+        if curve:
+            # Define a list with all positions
+            position_list = []
+
+            # Define ws var
+            ws = False
+
+            # Get curve shape
+            curve_shape = KstMaya.get_shape_node(curve)
+
+            # Get degree
+            degree = cmds.getAttr(curve_shape+".degree")
+
+            # Get spans
+            spans = cmds.getAttr(curve_shape+".spans")
+
+            # Calulating ncvs with formula spans+degree
+            ncvs = spans+degree
+
+            # Define and set ws var for xform
+            if coords_space=='world':
+                ws = True
+
+            # Iterate over curve cvs
+            for i in range(0, ncvs):
+                pos = cmds.xform(curve_shape+".cv[%s]" % i, q = True, t = True, ws = ws)
+                position_list.append(pos)
+
+            # Return the list
+            return position_list
+        else:
+            cmds.warning("Curve %s,  is not defined, or is not a curve, double check!" % curve)
+            return None
+
+    def transfer_connections(self, src, dst, connections_list, mode = 'move'):
+        '''
+        Desc:
+        Copy or Move, connections from one node to another one
+
+        Parameter:
+        src = source object move (or copy) connections from
+        dst = destination object move (or copy) connections to
+        connections_list = connections list to move or copy
+
+        Return:
+        None
+        '''
+
+        # List connections for src
+        if len(connections_list):
+            for conn in connections_list:
+                src_connections = cmds.listConnections('%s.%s' % (src, conn), c = True, plugs = True)
+
+                # Now in src_connections[0] there's the original src, and in src_connectons[0] the original destination
+                # so, just replace the src_name
+                # Store the current connection
+                curr_conn = src_connections[0].split('.')[1]
+
+                # If mode is setted on move disconnect old object
+                if mode == 'move':
+                    self.node_op(src_connections[0], '||', src_connections[1])
+
+                # Exchange src with specified destination
+                new_src = dst
+
+                # Reconnect
+                self.node_op('%s.%s' % (new_src, curr_conn), '>>', src_connections[1])
+
+
     # Insert element in hierarchy
     def insert_parent(self, src, dst, reset_src_trs = True):
         '''
@@ -440,6 +629,165 @@ class KstMaya(object):
         cmds.parent(child, src)
 
         return parent, src, child
+
+    def mirror_this(self, obj_to_mirror, plane = 'YZ'): # ToDo: finish and check
+        '''
+        Desc:
+        Mirror object
+
+        Parameter:
+        src = object to insert
+        dst = destination object that will be reparented
+
+        Return:
+        None
+        '''
+        mirrored = obj_to_mirror.replace('L','R')
+        trs = cmds.xform(obj_to_mirror, q=True, t=True, ws=True)
+        trs_vec = om.MVector(float(trs[0]), float(trs[1]), float(trs[2]))
+        if plane == 'YZ':
+            mirror_axis = om.MVector(-1, 1, 1)
+        if plane == 'XZ':
+            mirror_axis = om.MVector(1, -1, 1)
+        if plane == 'YZ':
+            mirror_axis = om.MVector(1, 1, -1)
+        else:
+            pass
+        mirrored_coords = om.MVector(trs_vec.x * mirror_axis.x, trs_vec.y * mirror_axis.y, trs_vec.z * mirror_axis.z)
+        cmds.setAttr('%s.%s' % (mirrored, 'tx'), mirrored_coords.x )
+        cmds.setAttr('%s.%s' % (mirrored, 'ty'), mirrored_coords.y )
+        cmds.setAttr('%s.%s' % (mirrored, 'tz'), mirrored_coords.z )
+        return mirrored_coords
+
+    # calculate the closest vertex from give distance
+    def get_closest_vertices_between(self, src, dst, dist): # ToDo: check code
+        '''
+        Desc:
+        Insert an object in the middle of an existing hierarchy
+
+        Parameter:
+        src = object to insert
+        dst = destination object that will be reparented
+
+        Return:
+        None
+        '''
+
+        # Get the relative MObject for use method API for source and destination
+        oSrc = KstCore.get_mobject_from_name(src)
+        oDst = KstCore.get_mobject_from_name(dst)
+
+        # Get the relative DAG for use method API for source and destination
+        dSrc = KstCore.get_dag_from_node_name(src)
+        dDst = KstCore.get_dag_from_node_name(dst)
+
+        # Attach mesh functions to src and dst objects
+        srcFnMesh = om.MFnMesh(dSrc)
+        dstFnMesh = om.MFnMesh(dDst)
+
+        # Define the list for closestVertex storage
+        closest_vlist = list()
+
+        # Check if the datatype is mesh
+        if srcFnMesh.type() == om.MFn.kMesh and dstFnMesh.type() == om.MFn.kMesh:
+            srcItVert = om.MItMeshVertex(oSrc)
+            dstItVert = om.MItMeshVertex(oDst)
+
+            # Define variables for mesh iterator
+            srcVtxPos = om.MPoint()
+            dstVtxPos = om.MPoint()
+            ws = om.MSpace.kObject
+
+            # Define empty point cloud for stora all position from the iterator
+            srcVtxsPos = om.MPointArray()
+
+            # Define empty point cloud for store closest points result
+            closestPoints = om.MPointOnMesh()
+
+            # Define MMeshIntersector on destination mesh for get closest point
+            meshIntersector = om.MMeshIntersector()
+
+            # Define a DAGPath for retrieve selection based on component
+            selectionClosest = om.MSelectionList()
+            selection_dag = om.MDagPath()
+
+            # Iterate over all mesh vertices, and get all positions
+            while not srcItVert.isDone():
+
+                # Get current position
+                srcVtxPos = srcItVert.position(ws)
+
+                while not dstItVert.isDone():
+                    srcVtxDest = dstItVert.position(ws)
+                    mag = KstMath.get_mag(KstMath.vec_from_2_points(srcVtxPos, srcVtxDest))
+
+                    if mag <= dist:
+                        closest_vlist.append(dstItVert.index())
+                        cmds.select(dst+'.vtx[%s]' % dstItVert.index(), add=True)
+                    dstItVert.next()
+                srcItVert.next()
+
+            print('ARRAY CLOSEST: ', closest_vlist)
+
+
+        '''
+        clothRigGrp = "clothAnimRig_GRP"
+        jntPos = cmds.xform(jnt, q=True, ws=True, t=True)
+        sel = sel.replace("[u'","")
+        sel = sel.replace("']","")
+        scluster = str(sknMsh)
+        scluster = scluster.replace("[u'","")
+        scluster = scluster.replace("']","")
+        vtxs = cmds.polyEvaluate(sel, v=True)
+        ntotVtxs = vtxs/njoints
+        closestPoints = []
+        #print jntPos
+        #for i in xrange(vtxs):
+        for i in range(500):
+            vtx = (sel+".vtx["+str(i)+"]")
+            print " "
+            print vtx
+            if cmds.progressBar(progressControl, query = True, isCancelled = True):
+                break
+            #if i%2 == 1:
+            ppos = []
+            ppos = cmds.xform((sel+".vtx["+str(i)+"]"), q = True, ws = True, t = True)
+            newpos = [ppos[0] - jntPos[0], ppos[1] - jntPos[1], ppos[2] - jntPos[2]]
+            res = mag(newpos)
+            cmds.text(stat, edit=True, label = (str(i)+"/"+str(vtxs)))
+            skinJointsList = maya.mel.eval('skinPercent -query -transform %(scluster)s %(vtx)s' %vars())
+            # ToDo: skinCluster conversion\
+            trackers = []
+            weights = []
+            newjnt = []
+            cpStra = 'pointConstraint -mo '
+            cpStrb = ''
+            for obj in skinJointsList:
+                transform = obj
+                joints = (obj+".vtx["+str(i)+"]JNT")
+                skinValue = maya.mel.eval('skinPercent -transform %(transform)s -query -value %(scluster)s %(vtx)s' %vars())
+                #print ("DEBUG: "+str(transform)+" VALUE: "+str(skinValue))
+                if (res <= dist):
+                    newjnt = cmds.joint(n = (obj+".vtx["+str(i)+"]JNT"),p = ppos)
+                    cmds.setAttr((newjnt+'.radius'),.05)
+                    cmds.parent(newjnt, clothRigGrp)
+                    trackers.append(obj)
+                    weights.append(skinValue)
+            if len(trackers) > 0:
+                print trackers
+                print weights
+                        #print trackers
+                        #print weights
+            #cmds.pointConstraint(trackers, newjnt, mo = True)
+                #cpStra+= ('%(trackers)s ')
+                #cpStrj= ('%(joints)s ')
+                #cpStrb+= ('%(weights)s ')
+            #print(cpStra+cpStrj)
+            #print trackers
+            #print weights
+
+            cmds.progressBar(progressControl, edit = True, step = 1)
+            '''
 
     # Abc code
     def abc_import(self, mode='Import', namespace='', file_path=''):
