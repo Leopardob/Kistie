@@ -86,9 +86,11 @@ krig.create_joint_chain('MyChain',pos)
 I could continue until tomorrow morning with other examples, but the source code is full of comment, and the class and method quite clear, just explore the possibility, you will see that Kistie is quite flexible, and most important Open Source, so, change what you want or expand as you want and just...
 Potentially you could build an entire character rig with the functions that i'm implemented. I did =D
 
-Just experiment, and if you want let me know.
+Take in mind, that i can just work on Kistie in my spare time, so i don't know when i will release future updates.
 
-KEEP IT SIMPLE TAKE IT EASY =)
+Just make experiments, and if you want let me know.
+
+And don't forget... KEEP IT SIMPLE TAKE IT EASY =)
 
 Enjoy!
 
