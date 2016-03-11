@@ -10,7 +10,7 @@ Developer -> SW_API (different API for each SW)
 
 Developer -> Kistie (All API for each SW)
 
-It's just an experiment, maybe a bit crazy, but for now at least for me, already semplified a lot my life, i hope that will also for you.
+It's just an experiment, maybe a bit crazy, but for now at least for me, already semplified a lot my life, i hope that will be the same for you.
 So, this first commit it's just for Maya also for see the interest about Kistie from CG community.
 
 How to use:
