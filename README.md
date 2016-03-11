@@ -2,8 +2,8 @@
 A simple framework for rigging in Maya, and soon other softwares.
 Softwares that coming soon will be supported in Kistie are (Houdini, Modo, Blender)
 
-I started last year to develop Kistie in my spare time because in the studios where i worked we used a lot of different software, and all time we rewrote same procedure and same classes that make exactly the same stuff but in different softwares.
-So i added a level of API in that way:
+I started last year to develop Kistie in my spare time because in the studios where i worked we used a lot of different software, and all time we spent a lot of time to rewrote same procedures, functions and classes that make exactly the same stuff but in different softwares.
+So my original idea was add a level of API in that way:
 
 instead:  
 Developer -> SW_API (different API for each SW)
