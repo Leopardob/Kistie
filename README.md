@@ -1,4 +1,4 @@
-# Kistie (K.eep, I.t, S.imple, T.ake, I.t, E.asy)
+### Kistie (K.eep, I.t, S.imple, T.ake, I.t, E.asy)
 A simple framework for rigging in Maya, and soon other softwares.
 Softwares that coming soon will be supported in Kistie are (Houdini, Modo, Blender)
 
@@ -24,7 +24,7 @@ Before all we need to tell to Maya where is Kistie:
 sys.path.append('C:/Work/DEV/Kistie') # Your repo
 ```
 
-ex.1 - Channels connections
+### ex.1 - Channels connections
 - Create two cubes
 
 run this script:
@@ -37,7 +37,7 @@ kmaya = KstMaya()
 kmaya.node_op('pCube1.tx','>>','pCube2.ty')
 ```
 
-ex.3 - Object creation
+### ex.2 - Object creation
 - Create two locators
 
 run this script:
@@ -49,19 +49,7 @@ krig = KstRig()
 krig.create_line_from_objects('curve', ['locator1', 'locator2'])
 ```
 
-ex.2 - Object creation
-- Create two locators
-
-run this script:
-```
-import maya.cmds as cmds
-
-from kcode.krig.KstRig import KstRig
-krig = KstRig()
-krig.create_line_from_objects('curve', ['locator1', 'locator2'])
-```
-
-ex.4 - Joint chain creation from scratch
+### ex.3 - Joint chain creation from scratch
 from an empty Maya scene
 
 run this script:
@@ -73,7 +61,7 @@ krig = KstRig()
 krig.create_joint_chain('MyChain',[(0, 0, 0), (0,1,0), (0,2,0), (0,3,0)])
 ```
 
-ex.5 - Joint chain creation from 3 locators
+### ex.4 - Joint chain creation from 3 locators
 create 3 locators
 
 run this script:
