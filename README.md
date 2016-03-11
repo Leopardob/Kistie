@@ -4,8 +4,12 @@ Softwares that coming soon will be supported in Kistie are (Houdini, Modo, Blend
 
 I started last year to develop Kistie in my spare time because in the studios where i worked we used a lot of different software, and all time we rewrote same procedure and same classes that make exactly the same stuff but in different softwares.
 So i added a level of API in that way:
-instead:  Developer -> SW_API (different API for each SW)
-          Developer -> Kistie (All API for each SW)
+
+instead:  
+Developer -> SW_API (different API for each SW)
+
+Developer -> Kistie (All API for each SW)
+
 It's just an experiment, maybe a bit crazy, but for now at least for me, already semplified a lot my life, i hope that will also for you.
 So, this first commit it's just for Maya also for see the interest about Kistie from CG community.
 
