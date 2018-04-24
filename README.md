@@ -93,5 +93,3 @@ Just make experiments, and if you want let me know.
 And don't forget... KEEP IT SIMPLE TAKE IT EASY =)
 
 Enjoy!
-
-Leonardo Bruni
